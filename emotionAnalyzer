@@ -1,0 +1,27 @@
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3();
+const comprehend = new AWS.Comprehend();
+const transcribe = new AWS.TranscribeService();
+
+exports.handler = async (event) => {
+  const jobName = event.jobName;
+
+  const { TranscriptionJob } = await transcribe.getTranscriptionJob({ TranscriptionJobName: jobName }).promise();
+  const transcriptUri = TranscriptionJob.TranscriptionJob.Transcript.TranscriptFileUri;
+
+  const response = await fetch(transcriptUri);
+  const json = await response.json();
+  const text = json.results.transcripts[0].transcript;
+
+  const comp = await comprehend.detectSentiment({
+    LanguageCode: 'en',
+    Text: text
+  }).promise();
+
+  const mood = comp.Sentiment; // POSITIVE, NEGATIVE, etc.
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ mood, text })
+  };
+};
