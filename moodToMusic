@@ -1,0 +1,35 @@
+const AWS = require('aws-sdk');
+const { v4: uuidv4 } = require('uuid');
+const dynamo = new AWS.DynamoDB.DocumentClient();
+
+exports.handler = async (event) => {
+  const { mood, text, userId = 'guest' } = JSON.parse(event.body);
+  
+  const moodToPlaylist = {
+    POSITIVE: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+    NEGATIVE: 'https://open.spotify.com/playlist/37i9dQZF1DX3rxVfibe1L0',
+    NEUTRAL:  'https://open.spotify.com/playlist/37i9dQZF1DX4E3UdUs7fUx',
+    MIXED:    'https://open.spotify.com/playlist/37i9dQZF1DWZqd5JICZI0u'
+  };
+
+  const playlistUrl = moodToPlaylist[mood] || moodToPlaylist['NEUTRAL'];
+  const entryId = uuidv4();
+  const timestamp = new Date().toISOString();
+
+  await dynamo.put({
+    TableName: 'MoodMusicLogs',
+    Item: {
+      entryId,
+      userId,
+      mood,
+      text,
+      playlistUrl,
+      timestamp
+    }
+  }).promise();
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ playlistUrl, entryId, mood, timestamp })
+  };
+};
