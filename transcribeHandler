@@ -1,0 +1,26 @@
+const AWS = require('aws-sdk');
+const transcribe = new AWS.TranscribeService();
+
+exports.handler = async (event) => {
+  const bucket = "mood-music-audio-bucket";
+  const file = event.filename; // e.g. uploads/myvoice.mp3
+  const jobName = `job-${Date.now()}`;
+  const fileUri = `s3://${bucket}/${file}`;
+
+  const params = {
+    TranscriptionJobName: jobName,
+    LanguageCode: "en-US",
+    MediaFormat: "mp3",
+    Media: {
+      MediaFileUri: fileUri
+    },
+    OutputBucketName: bucket
+  };
+
+  await transcribe.startTranscriptionJob(params).promise();
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ jobName })
+  };
+};
