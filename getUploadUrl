@@ -1,0 +1,24 @@
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3();
+
+exports.handler = async (event) => {
+  const bucketName = 'mood-music-audio-bucket'; // 👈 Replace this with your bucket
+  const fileName = `recordings/${Date.now()}.mp3`;
+
+  const params = {
+    Bucket: bucketName,
+    Key: fileName,
+    Expires: 60,
+    ContentType: 'audio/mpeg',
+  };
+
+  const url = await s3.getSignedUrlPromise('putObject', params);
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ url, key: fileName }),
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+    },
+  };
+};
